@@ -1,0 +1,89 @@
+﻿@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+
+@inject ISnackbar Snackbar
+@inject HttpClient httpClient
+
+<MudDialog Style="width: 35%">
+
+    <DialogContent>
+        <EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudGrid>
+                <MudItem xs="12" sm="12">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudTextField Label="Field Name" @bind-Value="model.FieldName" For="@(() => model.FieldName)" />
+                            <MudNumericField Label="Field Area" Class="mt-3" @bind-Value="model.FieldArea" For="@(() => model.FieldArea)" />
+                            <MudTextField Label="Crop Name" Class="mt-3" @bind-Value="model.CropName" For="@(() => model.CropName)" />
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Add Field</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [Inject]
+    private IDialogService DialogService { get; set; }
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+
+
+    RegisterField model = new RegisterField();
+
+    public class RegisterField
+    {
+        [Required]
+        [StringLength(1024, ErrorMessage = "Name must be at least 3 characters long.", MinimumLength = 3)]
+        public string FieldName { get; set; }
+
+        [Required]
+        [Range(0.000000001, double.MaxValue, ErrorMessage = "The value must be a positive number")]
+        public double FieldArea { get; set; }
+
+        [Required]
+        [StringLength(1024, ErrorMessage = "Crop Name must be at least 3 characters long.", MinimumLength = 3)]
+        public string CropName { get; set; }
+
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+        var item = new FieldsDataModel
+            {
+                Id = Guid.NewGuid(),
+                CropName = model.CropName,
+                FieldArea = model.FieldArea,
+                FieldName = model.FieldName
+            };
+        var response = await httpClient.PostAsJsonAsync("save", item);
+
+        string responseContent = await response.Content.ReadAsStringAsync();
+        var res = JsonConvert.DeserializeObject<ResponseModel>(responseContent);
+        if (res != null && res.status)
+        {
+            MudDialog.Close();
+            Snackbar.Add(res.message, Severity.Success);
+        }
+        else if (res != null)
+        {
+            Snackbar.Add(res.message, Severity.Error);
+        }
+        StateHasChanged();
+    }
+
+
+
+}
