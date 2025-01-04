@@ -50,3 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/FarmManagement/bin
+/.vs
+/FarmManagement/obj
+/FarmManagement.Client/bin
+/FarmManagement.Client/obj
